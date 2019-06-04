@@ -11,7 +11,7 @@ from keras.preprocessing.image import ImageDataGenerator
 
 from utils import read_lines, load_img_arr
 
-DATA_DIR = join(dirname(dirname(__file__)), 'data')
+DATA_DIR = join(dirname(dirname(__file__)), 'data_small')
 TEST_DIR = join(DATA_DIR, 'test')
 TRAIN_DIR = join(DATA_DIR, 'train')
 TRAIN_INFO_FILE = join(DATA_DIR, 'train_info.csv')
