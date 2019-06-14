@@ -1,0 +1,51 @@
+description: cnn-painter-by-number-entrypoint
+checkpoint_storage:
+  type: shared_fs
+  host_path: "/home/chris/checkpoints/painters"
+
+bind_mounts:
+  - host_path: "/home/chris/painters/data_all"
+    container_path: "/home/chris/painters/data_all"
+  - host_path: "/tmp"
+    container_path: "/tmp"
+
+hyperparameters:
+  kernel_size:
+    type: const
+    val: 3
+  pool_size:
+    type: const
+    val: 2
+  dropout: # original value: 0.5
+    type: double
+    minval: 0.3
+    maxval: 0.7
+  L2_REG: # original value: 0.003
+    type: double
+    minval: 0.001
+    maxval: 0.005
+  lr: # original value: 0.000074
+    type: double
+    minval: 0.00006
+    maxval: 0.00009
+
+searcher:
+  name: random
+  metric: roc_auc
+  smaller_is_better: false
+  max_steps: 50
+  max_trials: 10
+
+max_restarts: 0
+
+resources:
+  slots_per_trial: 2
+
+min_validation_period: 10
+batches_per_step: 533
+
+environment:
+  runtime_packages:
+    - scikit-learn
+    - objgraph
+

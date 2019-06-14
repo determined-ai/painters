@@ -11,7 +11,7 @@ from keras.preprocessing.image import ImageDataGenerator
 
 from utils import read_lines, load_img_arr
 
-DATA_DIR = join(dirname(dirname(__file__)), 'data_small')
+DATA_DIR = '/home/chris/painters/data_all'
 TEST_DIR = join(DATA_DIR, 'test')
 TRAIN_DIR = join(DATA_DIR, 'train')
 TRAIN_INFO_FILE = join(DATA_DIR, 'train_info.csv')
@@ -23,11 +23,13 @@ MISC_DIR = join(dirname(dirname(__file__)), 'misc')
 
 def train_val_dirs_generators(
         batch_size, dir_tr, dir_val, target_size=(256, 256)):
+
     gen_tr = _train_generator()
     gen_val = _val_generator()
 
     sample = apply_to_images_in_subdirs(dir_tr, load_img_arr, num_per_cls=10)
     sample = np.array(sample)
+    # calculate any statistics required to actually perform the transforms to image data in real time during training
     gen_tr.fit(sample)
     gen_val.fit(sample)
 
@@ -61,6 +63,8 @@ def testing_generator(dir_tr):
 
 
 def _val_generator():
+    # Generate batches of tensor image data with real-time data augmentation.
+    # This reduces memory overhead
     return ImageDataGenerator(
         featurewise_center=True,
         featurewise_std_normalization=True)
@@ -90,6 +94,7 @@ def init_directory_generator(
         gen, dir_, batch_size, target_size=(256, 256),
         class_mode='categorical', shuffle_=True):
 
+    # flow_from_directory: Takes the path to a directory & generates batches of augmented data.
     return gen.flow_from_directory(
         dir_,
         class_mode=class_mode,
@@ -249,12 +254,15 @@ class PairsDirectoryIterator(object):
 
 
 def pairs_generator(X, y, batch_size, pair_func, num_groups):
+    # split validation data into groups (based on indices, maintaining uniform class label distribution in each group)
     grouped_indices = _split_into_groups(y, num_groups)
+    # function that returns pairs
     merged_combinations = _merge_within_groups_combinations(grouped_indices)
 
     while True:
         X_batch, y_batch = [], []
 
+        # each batch of the generator has batch_size pairs
         for _ in range(batch_size):
             try:
                 pair_indices = next(merged_combinations)
@@ -269,6 +277,7 @@ def pairs_generator(X, y, batch_size, pair_func, num_groups):
 
 
 def _split_into_groups(y, num_groups):
+    # num_groups = 32
     groups = [[] for _ in range(num_groups)]
     group_index = 0
 
@@ -276,11 +285,15 @@ def _split_into_groups(y, num_groups):
         this_cls_indices = np.where(y == cls)[0]
         num_cls_samples = len(this_cls_indices)
 
+        # what is 500???
         num_cls_split_groups = ceil(num_cls_samples / 500)
+        # split array into subarrays
         split = np.array_split(this_cls_indices, num_cls_split_groups)
 
         for cls_group in split:
+            # line 280 + this line: each first groups has ~500 members from each class (one sub array from this class)
             groups[group_index] = np.hstack((groups[group_index], cls_group))
+            # since there are num_groups total number of groups
             group_index = (group_index + 1) % num_groups
 
     return groups
@@ -289,6 +302,7 @@ def _split_into_groups(y, num_groups):
 def _merge_within_groups_combinations(grouped_indices):
     for gi in grouped_indices:
         shuffle(gi)
+    # combinations: for each group, return successive pairwise combinations of all elements in this group
     group_combinations = [combinations(gi, 2) for gi in grouped_indices]
     shuffle(group_combinations)
     return chain.from_iterable(group_combinations)
