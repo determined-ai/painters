@@ -1,31 +1,21 @@
-import os
-
-import keras
-import numpy as np
-import tensorflow as tf
-from keras import backend as K
-from keras.datasets.cifar import load_batch
-from keras.layers import (Activation, Conv2D, Dense, Dropout, Flatten,
-                          MaxPooling2D)
 from keras.losses import categorical_crossentropy
 from keras.metrics import categorical_accuracy
-from keras.models import Sequential
 from keras.optimizers import Adam
-from keras.utils.data_utils import get_file
+import tensorflow as tf
+
+import numpy as np
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import accuracy_score
 
 import pedl
-from pedl.data import ArrayBatchLoader
 from pedl.frameworks.keras import KerasTrial
 from pedl.frameworks.keras.data import KerasDataAdapter
-from pedl.frameworks.util import elementwise_mean
-from sklearn.metrics import roc_auc_score
 
-from train_cnn import _cnn, IMGS_DIM_3D, BATCH_SIZE, SOFTMAX_SIZE
+from train_cnn import _cnn, IMGS_DIM_3D, BATCH_SIZE
 from data_provider import load_organized_data_info, train_val_dirs_generators
 from validation import _create_pairs_generator, IMGS_DIM_1D
 from utils import pairs_dot
 
-import objgraph
 
 def categorical_error(y_true, y_pred):
     return 1. - categorical_accuracy(y_true, y_pred)
@@ -38,21 +28,13 @@ class PainterTrial(KerasTrial):
         self.kernel_size = pedl.get_hyperparameter("kernel_size")
         self.dropout = pedl.get_hyperparameter("dropout")
         self.pool_size = pedl.get_hyperparameter("pool_size")
-        self.L2_REG = pedl.get_hyperparameter("L2_REG")
+        self.l2_reg = pedl.get_hyperparameter("l2_reg")
         self.lr = pedl.get_hyperparameter("lr")
         self.my_batch_size = pedl.get_hyperparameter("batch_size")
         self.data_info = load_organized_data_info(IMGS_DIM_1D)
 
-    # def session_config(self, hparams):
-    #     if hparams.get("disable_CPU_parallelism", False):
-    #         return tf.ConfigProto(intra_op_parallelism_threads=1,
-    #                               inter_op_parallelism_threads=1)
-    #     else:
-    #         return tf.ConfigProto()
-
     def build_model(self, hparams):
-        model = _cnn(IMGS_DIM_3D)
-        return model
+        return _cnn(IMGS_DIM_3D)
 
     def optimizer(self):
         adam = Adam(lr=self.lr)
@@ -64,20 +46,11 @@ class PainterTrial(KerasTrial):
     def batch_size(self):
         return self.my_batch_size
 
-    def roc_auc(self, y_true, y_pred):
-        pass
-
+    # This is an abstract function which the trial class needs for instantiation.
     def validation_metrics(self):
         return {}
 
-    def vec_to_int(self, batch_labels):
-        batch_int_labels = []
-        for y in batch_labels:
-            batch_int_labels.append(np.where(y==1)[0][0])
-        return batch_int_labels
-
-
-    # HACK: compute the validation metrics in a customized way
+    # HACK: compute the validation metrics in a customized way.
     def compute_validation_metrics(self, step_id):
         assert self.validation_data_adapter is not None
         assert self.model is not None
@@ -90,17 +63,45 @@ class PainterTrial(KerasTrial):
         y_val = None
         num_inputs = 0
 
-        objgraph.show_growth(limit=50)
+        # TODO: pre-allocate array for X_val_embedded and y_val
+        #  to make the computation faster
+        # Shape of X_batch: (96=batch_size, 3, 256, 256 (dims of a single image)).
+        # Shape of y_batch: (96=batch_size, number of classes).
         for X_batch, y_batch in validation_iterator:
+            # Shape of X_embedded: (96=batch_size, number of classes).
             X_embedded = self.model.predict(X_batch)
-            if X_val_embedded is None: X_val_embedded = X_embedded
-            else: X_val_embedded = np.concatenate((X_val_embedded, X_embedded), axis=0)
-            if y_val is None: y_val = y_batch
-            else: y_val = np.concatenate((y_val, y_batch), axis=0)
 
+            # Shape of X_val_embedded: (iteration * batch_size, number of classes).
+            if X_val_embedded is None:
+                X_val_embedded = X_embedded
+            else:
+                X_val_embedded = np.concatenate((X_val_embedded, X_embedded), axis=0)
+
+            # Shape of y_val: number of (iteration * batch_size, number of classes).
+            if y_val is None:
+                y_val = y_batch
+            else:
+                y_val = np.concatenate((y_val, y_batch), axis=0)
             num_inputs += len(X_batch)
 
-        y_val = self.vec_to_int(y_val)
+        # Calculate categorical cross entropy for validation data,
+        # which is the same loss as used in training
+        y_pred_vec = tf.convert_to_tensor(X_val_embedded)
+        y_val_vec = tf.convert_to_tensor(y_val)
+        cce = categorical_crossentropy(y_pred_vec, y_val_vec)
+        sess = tf.Session()
+        with sess.as_default():
+            cce = cce.eval()
+        cce = np.mean(cce)
+
+        # Calculate accuracy of single image artist classification.
+        # Class prediction is the class with max prob in vector
+        # prediction of each painting.
+        y_val = np.argmax(y_val, axis=1)
+        y_pred = np.argmax(X_val_embedded, axis=1)
+        single_painting_acc = accuracy_score(y_val, y_pred)
+
+        # Pairwise evaluation: whether they are from the same artist
         batches_val = _create_pairs_generator(
             X_val_embedded, y_val, lambda u, v: [u, v],
             num_groups=32,
@@ -111,11 +112,13 @@ class PainterTrial(KerasTrial):
             y_pred = np.hstack((y_pred, pairs_dot(X)))
             y_true = np.hstack((y_true, y))
         roc_auc = roc_auc_score(y_true, y_pred)
-        objgraph.show_growth(limit=50)
 
-        return {"num_inputs": num_inputs, "validation_metrics": {'roc_auc': roc_auc}}
+        self.validation_data_adapter.stop()
 
-
+        return {"num_inputs": num_inputs,
+                "validation_metrics": {'roc_auc': roc_auc,
+                                       'categorical_crossentropy': cce,
+                                       'single_painting_accuracy': single_painting_acc}}
 
 def make_data_loaders(experiment_config, hparams):
     data_info = load_organized_data_info(IMGS_DIM_3D[1])

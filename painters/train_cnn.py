@@ -4,14 +4,12 @@ import math
 import keras.backend as K
 from keras.callbacks import ModelCheckpoint
 from keras.layers import Conv2D, Dense, Activation, MaxPooling2D
-from keras.layers import Flatten, BatchNormalization, Dropout
+from keras.layers import Flatten, Dropout
+from normalization import BatchNormalization
 from keras.layers.advanced_activations import PReLU
 from keras.models import Sequential, model_from_json
 from keras.optimizers import Adam
 from keras.regularizers import l2
-from keras.utils import multi_gpu_model
-
-import tensorflow as tf
 
 from data_provider import MODELS_DIR
 from data_provider import load_organized_data_info
@@ -22,6 +20,7 @@ import pedl
 K.set_learning_phase(1)
 K.set_image_data_format('channels_first')
 
+# TODO: move these to a config file
 IMGS_DIM_3D = (3, 256, 256)
 CNN_MODEL_FILE = join(MODELS_DIR, 'cnn.h5')
 MAX_EPOCHS = 500
@@ -34,11 +33,12 @@ PENULTIMATE_SIZE = 2048
 SOFTMAX_LAYER = 55
 SOFTMAX_SIZE = 1584
 
+# TODO: move these to a config file
 # Specify hyperparameters for this trial.
 kernel_size = pedl.get_hyperparameter("kernel_size")
 dropout = pedl.get_hyperparameter("dropout")
 pool_size = pedl.get_hyperparameter("pool_size")
-L2_REG = pedl.get_hyperparameter("L2_REG")
+L2_REG = pedl.get_hyperparameter("l2_reg")
 lr = pedl.get_hyperparameter("lr")
 
 
@@ -126,7 +126,7 @@ def _cnn(imgs_dim, compile_=True):
 
     if compile_:
         model.add(Dropout(rate=dropout))
-        # output: a vector of size (# of classes)
+        # Output: a vector of size (# of classes).
         model.add(_dense_layer(output_dim=SOFTMAX_SIZE))
         model.add(BatchNormalization())
         model.add(Activation(activation='softmax'))
@@ -160,10 +160,6 @@ def _dense_layer(output_dim):
 def compile_model(model):
     adam = Adam(lr=lr)
 
-    # with tf.device('/device:CPU:0'):
-    #     origin_model = model
-    # model = multi_gpu_model(origin_model, gpus=4)
-
     model.compile(
         loss='categorical_crossentropy',
         optimizer=adam,
@@ -184,13 +180,10 @@ def load_trained_cnn_softmax_layer(model_path):
 
 
 def _load_trained_cnn_layer(model_path, layer_index):
-    model = model_from_json('../models/model.json')
-    model.load_weights('../models/weights.h5')
-
+    model = model_from_json(model_path)
     dense_output = K.function(
         [model.layers[0].input, K.learning_phase()],
         [model.layers[layer_index].output])
-    # output in test mode = 0
     return lambda X: dense_output([X, 0])[0]
 
 

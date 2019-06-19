@@ -6,39 +6,33 @@ checkpoint_storage:
 bind_mounts:
   - host_path: "/home/chris/painters/data_all"
     container_path: "/home/chris/painters/data_all"
-  - host_path: "/tmp"
-    container_path: "/tmp"
 
 hyperparameters:
   kernel_size: 3
   pool_size: 2
-  dropout: 0.5
-  L2_REG: 0.003
-  lr: 0.000074
+  dropout: 0.6
+  l2_reg: 0.003
+  lr: 0.00006
   batch_size: 96
 
 searcher:
   name: single
-  metric: roc_auc
-  smaller_is_better: false
+  metric: categorical_crossentropy
+  smaller_is_better: true
   max_steps: 621
-  source_trial_id: 156
-
-#environment:
-#  debug: "0.1.0"
-
 
 max_restarts: 0
 
 resources:
-  slots_per_trial: 2
+  slots_per_trial: 1
 
-min_validation_period: 5
-batches_per_step: 533
+min_validation_period: 10
+batches_per_step: 300
 
 environment:
   runtime_packages:
     - scikit-learn
     - objgraph
+    - graphviz
   keras: 2.2.4
 

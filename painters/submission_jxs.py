@@ -1,36 +1,3 @@
-# # create submission file from model checkpoint stored in pedl
-#
-# from keras.models import model_from_json
-#
-# def create_submission():
-#     model = get_model()
-#     test_data = load_test_image()
-#     predictions = predict(model, test_data)
-#     write_submission(predictions)
-#
-#
-# def get_model():
-#     model = model_from_json('model.json')
-#     model.load_weights('weights.h5')
-#     return model
-#
-#
-# def load_test_image():
-#     pass
-#
-#
-# def predict(model, data):
-#     pass
-#
-#
-# def write_submission(prediction):
-#     pass
-#
-#
-# if __name__ == '__main__':
-#     create_submission()
-
-
 from os.path import join
 
 import numpy as np
@@ -105,6 +72,7 @@ def _calculate_batch_prediction_dot(lines, features_lookup):
 
 
 def _create_submission_file(batch_size, features_lookup, batch_predict_func):
+    # TODO: find existing submission file and delete
     append_to_file(["index,sameArtist\n"], SUBMISSION_FILE)
     for batch in read_lines_in_batches(SUBMISSION_INFO_FILE, batch_size):
         y_pred, indices = batch_predict_func(batch, features_lookup)

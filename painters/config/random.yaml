@@ -6,8 +6,6 @@ checkpoint_storage:
 bind_mounts:
   - host_path: "/home/chris/painters/data_all"
     container_path: "/home/chris/painters/data_all"
-  - host_path: "/tmp"
-    container_path: "/tmp"
 
 hyperparameters:
   kernel_size:
@@ -20,7 +18,7 @@ hyperparameters:
     type: double
     minval: 0.3
     maxval: 0.7
-  L2_REG: # original value: 0.003
+  l2_reg: # original value: 0.003
     type: double
     minval: 0.001
     maxval: 0.005
