@@ -1,0 +1,38 @@
+description: cnn-painter-by-number-entrypoint
+checkpoint_storage:
+  type: shared_fs
+  host_path: "/home/chris/checkpoints/painters"
+
+bind_mounts:
+  - host_path: "/home/chris/painters/data_check"
+    container_path: "/home/chris/painters/data_check"
+
+hyperparameters:
+  kernel_size: 3
+  pool_size: 2
+  dropout: 0.5
+  l2_reg: 0.003
+  lr: 0.00005
+  batch_size: 96
+
+searcher:
+  name: single
+  metric: categorical_crossentropy
+  smaller_is_better: true
+  max_steps: 2000
+
+max_restarts: 0
+
+resources:
+  slots_per_trial: 1
+
+min_validation_period: 10
+batches_per_step: 300
+
+environment:
+  runtime_packages:
+    - scikit-learn
+    - objgraph
+    - graphviz
+  keras: 2.2.4
+

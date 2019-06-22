@@ -29,9 +29,12 @@ def _organize_train_test_dir():
 def _organize_train_dir():
     paths, labels = _load_paths_labels_from_train_dir()
     ind_tr, ind_val, classes = _train_val_split_indices(labels)
-    _save_images_to_dir(NEW_TRAIN_DIR, paths[ind_tr], labels[ind_tr], classes)
-    _save_images_to_dir(
-        NEW_VAL_DIR, paths[ind_val], labels[ind_val], classes, multi_crop=False)
+    # The two lines below preprocess images for:
+    # training, with multi crop, and validation, without multi crop.
+    _save_images_to_dir(NEW_TRAIN_DIR, paths[ind_tr],
+                        labels[ind_tr], classes, multi_crop=True)
+    _save_images_to_dir(NEW_VAL_DIR, paths[ind_val],
+                        labels[ind_val], classes, multi_crop=False)
 
 
 def _load_paths_labels_from_train_dir():
@@ -42,10 +45,13 @@ def _load_paths_labels_from_train_dir():
         paths.append(abspath_)
         labels.append(labels_lookup[name])
 
+    # LabelEncoder: Encode labels with value between 0 and n_classes-1.
     return np.array(paths), LabelEncoder().fit_transform(labels)
 
 
 def _train_val_split_indices(labels):
+    # Just 1 fold (so not really cross validation,
+    # but simply splits data into train and val).
     split = StratifiedShuffleSplit(
         labels, n_iter=1, test_size=VAL_SIZE, random_state=42)
     indices_tr, indices_val = next(iter(split))
@@ -152,6 +158,8 @@ def _organize_test_dir():
 
 def _save_scaled_cropped_img(src, dest):
     image = load_img(src)
+    # Returns a sized and cropped version of the image,
+    # cropped to the requested aspect ratio and size.
     image = fit(image, IMGS_DIM_2D, method=LANCZOS)
     image.save(dest)
     return image
