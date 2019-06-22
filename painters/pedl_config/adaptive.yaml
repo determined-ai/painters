@@ -4,8 +4,8 @@ checkpoint_storage:
   host_path: "/home/chris/checkpoints/painters"
 
 bind_mounts:
-  - host_path: "/home/chris/painters/data_all"
-    container_path: "/home/chris/painters/data_all"
+  - host_path: "/home/chris/painters/data_check"
+    container_path: "/home/chris/painters/data_check"
 
 hyperparameters:
   kernel_size:
@@ -24,18 +24,20 @@ hyperparameters:
     maxval: 0.005
   lr: # original value: 0.000074
     type: double
-    minval: 0.00006
+    minval: 0.00005
     maxval: 0.00009
+  batch_size: # original value: 96
+    type: int
+    minval: 48
+    maxval: 192
 
 searcher:
   name: adaptive
   mode: standard
   metric: roc_auc
   smaller_is_better: false
-  max_steps: 50
-  target_trial_steps: 400
-  step_budget: 4000
-
+  target_trial_steps: 1000
+  step_budget: 50000
 
 max_restarts: 5
 
@@ -43,10 +45,10 @@ resources:
   slots_per_trial: 2
 
 min_validation_period: 10
-batches_per_step: 533
+batches_per_step: 300
 
 environment:
   runtime_packages:
     - scikit-learn
-    - objgraph
+  keras: 2.2.4
 

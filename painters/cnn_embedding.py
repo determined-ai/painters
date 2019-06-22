@@ -1,17 +1,17 @@
-from os.path import join, isfile, basename, splitext, dirname
+from os.path import isfile, basename, splitext
 
 import numpy as np
 
-from data_provider import DATA_DIR, load_organized_data_info
-from data_provider import MODELS_DIR, testing_generator
+from data_provider import load_organized_data_info
+from data_provider import testing_generator
 from data_provider import init_directory_generator
-from train_cnn import load_trained_cnn_feature_maps_layer, PENULTIMATE_SIZE
-from train_cnn import load_trained_cnn_penultimate_layer, LAST_FEATURE_MAPS_SIZE
-from train_cnn import load_trained_cnn_softmax_layer, SOFTMAX_SIZE
+from train_cnn import load_trained_cnn_feature_maps_layer
+from train_cnn import load_trained_cnn_penultimate_layer
+from train_cnn import load_trained_cnn_softmax_layer
 from utils import mkdirs_if_not_exist
+from config import *
 
-IMGS_DIM_1D = 256
-MODEL_NAME = 'cnn_2_9069_vl.h5'
+# This global variable is used in the original baseline, but not used in our pipeline
 BATCH_SIZE = 512
 
 LAYER_RESULT_FUNCS = {
@@ -19,13 +19,6 @@ LAYER_RESULT_FUNCS = {
     'penultimate': load_trained_cnn_penultimate_layer,
     'softmax': load_trained_cnn_softmax_layer
 }
-
-LAYER_SIZES = {
-    'feature_maps': LAST_FEATURE_MAPS_SIZE,
-    'penultimate': PENULTIMATE_SIZE,
-    'softmax': SOFTMAX_SIZE
-}
-
 
 def get_embedded_train_val_split(layer, model_name=MODEL_NAME):
     assert layer in LAYER_RESULT_FUNCS.keys()

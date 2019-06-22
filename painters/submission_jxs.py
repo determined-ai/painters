@@ -1,8 +1,9 @@
-from os.path import join
+import os
+from os.path import join, exists
 
 import numpy as np
 from data_provider import SUBMISSION_INFO_FILE, DATA_DIR
-from data_provider import load_organized_data_info
+from data_provider import load_organized_data_info, testing_generator, init_directory_generator
 from utils import append_to_file
 from utils import read_lines_in_batches
 from keras.models import model_from_json
@@ -10,44 +11,44 @@ from os.path import basename
 
 IMGS_DIM_1D = 256
 SUBMISSION_FILE = join(DATA_DIR, 'submission.csv')
-BATCH_SIZE = 10000
+BATCH_SIZE = 1000000
 FILES_TO_AVG = {}
 
 
 def _create_submission_file_avg_cnns():
     data_info = load_organized_data_info(IMGS_DIM_1D)
-    model = _get_model()
-    X_test, names = _average_embedded_test_data(model, data_info)
-    features_lookup = {n: f for n, f in zip(names, X_test)}
+    model = _get_model('/home/chris/painters/models/')
+    X_test, img_filenames = _average_embedded_test_data(model, data_info)
+    features_lookup = {n: f for n, f in zip(img_filenames, X_test)}
     _create_submission_file(
         BATCH_SIZE, features_lookup, _calculate_batch_prediction_dot)
 
 
-def _get_model():
-    with open('../models/model.json', 'r') as json_file:
+def _get_model(checkpoint_path):
+    model_path = join(checkpoint_path, 'model.json')
+    weights_path = join(checkpoint_path, 'weights.h5')
+    with open(model_path, 'r') as json_file:
         model = model_from_json(json_file.read())
-    model.load_weights('../models/weights.h5')
+    model.load_weights(weights_path)
     return model
 
 
 def _average_embedded_test_data(model, data_info):
     X_test, y_test = None, None
-
     data_info = load_organized_data_info(IMGS_DIM_1D)
     dir_te, num_te = data_info['dir_te'], data_info['num_te']
     dir_tr = data_info['dir_tr']
-    from data_provider import testing_generator, init_directory_generator
     gen = testing_generator(dir_tr=dir_tr)
     gen_test = init_directory_generator(
         gen, dir_te, BATCH_SIZE, class_mode='sparse', shuffle_=False)
 
-    num_full_epochs = num_te // BATCH_SIZE
-    last_batch_size = num_te - (num_full_epochs * BATCH_SIZE)
+    num_batch_per_epoch = num_te // BATCH_SIZE
+    last_batch_size = num_te - (num_batch_per_epoch * BATCH_SIZE)
 
-    for i in range(num_full_epochs + 1):
+    for i in range(num_batch_per_epoch + 1):
         X_batch, y_batch = next(gen_test)
 
-        if i == num_full_epochs:
+        if i == num_batch_per_epoch:
             X_batch = X_batch[:last_batch_size]
 
         if X_test is None:
@@ -55,8 +56,10 @@ def _average_embedded_test_data(model, data_info):
         else:
             X_test = np.vstack((X_test, model.predict(X_batch)))
 
-    names = [basename(p) for p in gen_test.filenames]
-    return X_test, names
+    # gen_test.filenames is ordered the same as X_test
+    # (image file names with corresponding features).
+    img_filenames = [basename(p) for p in gen_test.filenames]
+    return X_test, img_filenames
 
 
 def _calculate_batch_prediction_dot(lines, features_lookup):
@@ -72,7 +75,10 @@ def _calculate_batch_prediction_dot(lines, features_lookup):
 
 
 def _create_submission_file(batch_size, features_lookup, batch_predict_func):
-    # TODO: find existing submission file and delete
+    # Find existing submission file and delete.
+    if exists(SUBMISSION_FILE):
+        os.remove(SUBMISSION_FILE)
+
     append_to_file(["index,sameArtist\n"], SUBMISSION_FILE)
     for batch in read_lines_in_batches(SUBMISSION_INFO_FILE, batch_size):
         y_pred, indices = batch_predict_func(batch, features_lookup)

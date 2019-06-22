@@ -1,24 +1,19 @@
 from keras.losses import categorical_crossentropy
-from keras.metrics import categorical_accuracy
 from keras.optimizers import Adam
 import tensorflow as tf
 
 import numpy as np
-from sklearn.metrics import roc_auc_score
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import roc_auc_score, accuracy_score
 
 import pedl
 from pedl.frameworks.keras import KerasTrial
 from pedl.frameworks.keras.data import KerasDataAdapter
 
-from train_cnn import _cnn, IMGS_DIM_3D, BATCH_SIZE
+from train_cnn import _cnn
 from data_provider import load_organized_data_info, train_val_dirs_generators
 from validation import _create_pairs_generator, IMGS_DIM_1D
 from utils import pairs_dot
-
-
-def categorical_error(y_true, y_pred):
-    return 1. - categorical_accuracy(y_true, y_pred)
+from config import *
 
 
 class PainterTrial(KerasTrial):
@@ -59,14 +54,13 @@ class PainterTrial(KerasTrial):
         validation_iterator = self.validation_data_adapter.get_iterator()
         assert validation_iterator is not None
 
+        # TODO: preallocate numpy arrays
         X_val_embedded = None
         y_val = None
-        num_inputs = 0
 
-        # TODO: pre-allocate array for X_val_embedded and y_val
-        #  to make the computation faster
         # Shape of X_batch: (96=batch_size, 3, 256, 256 (dims of a single image)).
         # Shape of y_batch: (96=batch_size, number of classes).
+        num_inputs = 0
         for X_batch, y_batch in validation_iterator:
             # Shape of X_embedded: (96=batch_size, number of classes).
             X_embedded = self.model.predict(X_batch)
@@ -84,13 +78,14 @@ class PainterTrial(KerasTrial):
                 y_val = np.concatenate((y_val, y_batch), axis=0)
             num_inputs += len(X_batch)
 
+        self.validation_data_adapter.stop()
+
         # Calculate categorical cross entropy for validation data,
         # which is the same loss as used in training
         y_pred_vec = tf.convert_to_tensor(X_val_embedded)
         y_val_vec = tf.convert_to_tensor(y_val)
         cce = categorical_crossentropy(y_pred_vec, y_val_vec)
-        sess = tf.Session()
-        with sess.as_default():
+        with tf.Session().as_default():
             cce = cce.eval()
         cce = np.mean(cce)
 
@@ -105,7 +100,7 @@ class PainterTrial(KerasTrial):
         batches_val = _create_pairs_generator(
             X_val_embedded, y_val, lambda u, v: [u, v],
             num_groups=32,
-            batch_size=10000)
+            batch_size=1000000)
 
         y_pred, y_true = np.array([]), np.array([])
         for X, y in batches_val:
@@ -113,15 +108,14 @@ class PainterTrial(KerasTrial):
             y_true = np.hstack((y_true, y))
         roc_auc = roc_auc_score(y_true, y_pred)
 
-        self.validation_data_adapter.stop()
-
         return {"num_inputs": num_inputs,
                 "validation_metrics": {'roc_auc': roc_auc,
                                        'categorical_crossentropy': cce,
                                        'single_painting_accuracy': single_painting_acc}}
 
 def make_data_loaders(experiment_config, hparams):
-    data_info = load_organized_data_info(IMGS_DIM_3D[1])
+    # multi_crop improves training, but was not used for author's submission
+    data_info = load_organized_data_info(IMGS_DIM_3D[1], multi_crop=True)
     dir_tr = data_info['dir_tr']
     dir_val = data_info['dir_val']
 

@@ -10,16 +10,7 @@ import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
 
 from utils import read_lines, load_img_arr
-
-# TODO: Clean up the following, put them in a config file.
-DATA_DIR = '/home/chris/painters/data_all'
-TEST_DIR = join(DATA_DIR, 'test')
-TRAIN_DIR = join(DATA_DIR, 'train')
-TRAIN_INFO_FILE = join(DATA_DIR, 'train_info.csv')
-SUBMISSION_INFO_FILE = join(DATA_DIR, 'submission_info.csv')
-ORGANIZED_DATA_INFO_FILE = 'organized_data_info_.json'
-MODELS_DIR = join(dirname(dirname(__file__)), 'models')
-MISC_DIR = join(dirname(dirname(__file__)), 'misc')
+from config import *
 
 
 def train_val_dirs_generators(
@@ -197,7 +188,6 @@ class PairsNumpyArrayIterator(object):
             try:
                 X_batch, y_batch = next(self.pairs_generator)
             except StopIteration:
-                # todo: implement this properly :)
                 self._init_pairs_generator()
                 X_batch, y_batch = next(self.pairs_generator)
         return [X_batch[:, 0], X_batch[:, 1]], y_batch
@@ -237,7 +227,6 @@ class PairsDirectoryIterator(object):
             try:
                 paths_batch, y_batch = next(self.pairs_generator)
             except StopIteration:
-                # todo: implement this properly :)
                 self._init_pairs_generator()
                 paths_batch, y_batch = next(self.pairs_generator)
 
@@ -289,8 +278,8 @@ def _split_into_groups(y, num_groups):
         this_cls_indices = np.where(y == cls)[0]
         num_cls_samples = len(this_cls_indices)
 
-        # TODO: find out what is 500
-        num_cls_split_groups = ceil(num_cls_samples / 500)
+        num_cls_splits = 500
+        num_cls_split_groups = ceil(num_cls_samples / num_cls_splits)
         # Split array into subarrays.
         split = np.array_split(this_cls_indices, num_cls_split_groups)
 

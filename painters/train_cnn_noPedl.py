@@ -1,4 +1,4 @@
-from os.path import join
+from os.path import join, dirname
 
 import math
 import keras.backend as K
@@ -10,13 +10,56 @@ from keras.layers.advanced_activations import PReLU
 from keras.models import Sequential, model_from_json
 from keras.optimizers import Adam, Adadelta
 from keras.regularizers import l2
+import tensorflow as tf
+from keras.utils import multi_gpu_model
 
 from data_provider import load_organized_data_info
 from data_provider import train_val_dirs_generators
-from config import *
 
-K.set_learning_phase(1)
+# K.set_learning_phase(1)
 K.set_image_data_format('channels_first')
+
+# Data directories
+DATA_DIR = '/home/chris/painters/data_check'
+TEST_DIR = join(DATA_DIR, 'test')
+TRAIN_DIR = join(DATA_DIR, 'train')
+TRAIN_INFO_FILE = join(DATA_DIR, 'train_info.csv')
+SUBMISSION_INFO_FILE = join(DATA_DIR, 'submission_info.csv')
+ORGANIZED_DATA_INFO_FILE = 'organized_data_info_.json'
+MODELS_DIR = join(dirname(dirname(__file__)), 'models')
+MISC_DIR = join(dirname(dirname(__file__)), 'misc')
+
+
+IMGS_DIM_3D = (3, 256, 256)
+CNN_MODEL_FILE = join(MODELS_DIR, 'cnn.h5')
+MAX_EPOCHS = 500
+W_INIT = 'he_normal'
+LAST_FEATURE_MAPS_LAYER = 46
+LAST_FEATURE_MAPS_SIZE = (128, 8, 8)
+PENULTIMATE_LAYER = 51
+PENULTIMATE_SIZE = 2048
+SOFTMAX_LAYER = 55
+NUM_CLASSES = SOFTMAX_SIZE = 1584
+
+
+# Hyper parameters
+kernel_size = 3
+pool_size = 2
+dropout = 0.5
+L2_REG = 0.003
+lr = 0.000074
+BATCH_SIZE = 96
+
+
+IMGS_DIM_1D = 256
+MODEL_NAME = 'cnn_2_9069_vl.h5'
+
+LAYER_SIZES = {
+    'feature_maps': LAST_FEATURE_MAPS_SIZE,
+    'penultimate': PENULTIMATE_SIZE,
+    'softmax': SOFTMAX_SIZE
+}
+
 
 
 def _train_model():
@@ -138,6 +181,11 @@ def _dense_layer(output_dim):
 
 def compile_model(model):
     adam = Adam(lr=lr)
+
+    # Specify multi-gpu when running outside of pedl
+    with tf.device('/device:CPU:0'):
+        origin_model = model
+    model = multi_gpu_model(origin_model, gpus=4)
 
     model.compile(
         loss='categorical_crossentropy',

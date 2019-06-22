@@ -1,4 +1,5 @@
 # Overwrite the Keras BatchNormalization class to create mode=2 for BatchNormalization layer.
+# Reference: https://www.bountysource.com/issues/43244022-big-problems-with-gan-and-keras-2-0-because-of-new-batchnorm
 # -*- coding: utf-8 -*-
 """Normalization layers.
 """
@@ -205,9 +206,6 @@ class BatchNormalization(Layer):
 
         # Pick the normalized form corresponding to the training phase.
         # HACK: use training=True to create mode=2 as in Keras 1
-        # Reference:
-        # https://www.bountysource.com/issues/43244022-big-problems-with-
-        # gan-and-keras-2-0-because-of-new-batchnorm
         # mode=2 is not supported by Keras 2.
         # The original definition of mode=2 is here:
         # http://faroit.com/keras-docs/1.2.2/layers/normalization/
