@@ -1,0 +1,35 @@
+This repository is an adaptation of the original first place solution of Kaggle's painter by numbers challenge.
+Original competition: https://www.kaggle.com/c/painter-by-numbers/overview
+Original first place code: https://github.com/inejc/painters
+
+An overview of the repository:
+
+1. An overview of the whole modeling process is here:
+http://blog.kaggle.com/2016/11/17/painter-by-numbers-competition-1st-place-winners-interview-nejc-ilenic/
+
+2. Pedl scripts:
+    1) data_dirs_organizer.py organizes data directories and does data pre-processing
+    2) model_def_standard.py is the model definition using pedl's Keras trial interface.
+    3) pedl_config are the configuration files for running this repository
+    4) train_cnn.py contains the actual definition of model, which is imported in model_def_standard.py
+    5) __init__.py
+
+3. Other scripts
+    1) scripts with helper functions: config.py, data_provider.py, normalization.py (a hack we used to tackle
+    the problem that after keras update, the BatchNormalization layer with mode=2 is no longer available),
+    utils.py, validation.py (helper functionalities for doing pairwise validation)
+    2) scripts to IGNORE: cnn_embedding.py, submission.py. These were from the original baseline and it is
+    hard for us to reuse code in these two scripts so we have rewrote them (based on our understanding)
+    submission_jxs.py
+
+4. To run the code in pedl:
+1) if you are running it on soak, then data_check is the data directory. Otherwise:
+    i. Download the dataset (either the whole train.zip or a subset of the training data as in here:
+    https://www.kaggle.com/datasets, and all other data such as test.zip, and the data information csv files)
+    ii. Run data_dirs_organizer.py to set up data repositories and do data pre-processing
+    iii. Once you have the data set up, run the pedl scripts in the usual way
+    iv. If you want to create submission files and submit to Kaggle, run submission_jxs.py
+
+
+
+
