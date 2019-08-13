@@ -10,7 +10,7 @@ import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
 
 from utils import read_lines, load_img_arr
-from config import *
+from config import DATA_DIR, ORGANIZED_DATA_INFO_FILE, TRAIN_INFO_FILE
 
 
 def train_val_dirs_generators(

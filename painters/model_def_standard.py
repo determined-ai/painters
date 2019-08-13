@@ -13,20 +13,16 @@ from train_cnn import _cnn
 from data_provider import load_organized_data_info, train_val_dirs_generators
 from validation import _create_pairs_generator, IMGS_DIM_1D
 from utils import pairs_dot
-from config import *
+from config import IMGS_DIM_3D
 
 
 class PainterTrial(KerasTrial):
     def __init__(self, hparams):
         super().__init__(hparams)
 
-        self.kernel_size = pedl.get_hyperparameter("kernel_size")
-        self.dropout = pedl.get_hyperparameter("dropout")
-        self.pool_size = pedl.get_hyperparameter("pool_size")
-        self.l2_reg = pedl.get_hyperparameter("l2_reg")
         self.lr = pedl.get_hyperparameter("lr")
         self.my_batch_size = pedl.get_hyperparameter("batch_size")
-        self.data_info = load_organized_data_info(IMGS_DIM_1D)
+        self.data_info = load_organized_data_info(IMGS_DIM_3D[1])
 
     def build_model(self, hparams):
         return _cnn(IMGS_DIM_3D)
@@ -115,11 +111,13 @@ class PainterTrial(KerasTrial):
 
 def make_data_loaders(experiment_config, hparams):
     # multi_crop improves training, but was not used for author's submission
-    data_info = load_organized_data_info(IMGS_DIM_3D[1], multi_crop=True)
+    data_info = load_organized_data_info(
+        IMGS_DIM_3D[1], multi_crop=pedl.get_hyperparameter("multi_crop"))
     dir_tr = data_info['dir_tr']
     dir_val = data_info['dir_val']
 
-    gen_tr, gen_val = train_val_dirs_generators(BATCH_SIZE, dir_tr, dir_val)
+    gen_tr, gen_val = train_val_dirs_generators(
+        pedl.get_hyperparameter("batch_size"), dir_tr, dir_val)
 
     gen_tr = KerasDataAdapter(gen_tr, workers=16, use_multiprocessing=True)
     gen_val = KerasDataAdapter(gen_val, workers=16, use_multiprocessing=True)
