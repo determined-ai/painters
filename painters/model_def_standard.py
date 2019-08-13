@@ -1,3 +1,4 @@
+import keras
 from keras.losses import categorical_crossentropy
 from keras.optimizers import Adam
 import tensorflow as tf
@@ -9,11 +10,11 @@ import pedl
 from pedl.frameworks.keras import KerasTrial
 from pedl.frameworks.keras.data import KerasDataAdapter
 
-from train_cnn import _cnn
+from train_cnn import _cnn, _simple_cnn
 from data_provider import load_organized_data_info, train_val_dirs_generators
 from validation import _create_pairs_generator, IMGS_DIM_1D
 from utils import pairs_dot
-from config import IMGS_DIM_3D
+from config import IMGS_DIM_3D, NUM_CLASSES
 
 
 class PainterTrial(KerasTrial):
@@ -25,7 +26,29 @@ class PainterTrial(KerasTrial):
         self.data_info = load_organized_data_info(IMGS_DIM_3D[1])
 
     def build_model(self, hparams):
-        return _cnn(IMGS_DIM_3D)
+        if pedl.get_hyperparameter("model_type") == "original":
+            model = _cnn(IMGS_DIM_3D)
+        elif pedl.get_hyperparameter("model_type") == "vgg19":
+            model = keras.applications.vgg19.VGG19(
+                include_top=True,
+                weights=None,
+                input_shape=IMGS_DIM_3D,
+                classes=NUM_CLASSES
+            )
+        elif pedl.get_hyperparameter("model_type") == "resnet50":
+            model = keras.applications.resnet.ResNet50(
+                include_top=True,
+                weights=None,
+                input_shape=IMGS_DIM_3D,
+                classes=NUM_CLASSES
+            )
+        elif pedl.get_hyperparameter("model_type") == "simple":
+            model = _simple_cnn(IMGS_DIM_3D)
+        else:
+            assert False
+
+        print(model.summary())
+        return model
 
     def optimizer(self):
         adam = Adam(lr=self.lr)
@@ -123,7 +146,3 @@ def make_data_loaders(experiment_config, hparams):
     gen_val = KerasDataAdapter(gen_val, workers=16, use_multiprocessing=True)
 
     return (gen_tr, gen_val)
-
-
-
-

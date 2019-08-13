@@ -1,8 +1,7 @@
 from os.path import join, dirname
-import pedl
 
 # Data directories
-DATA_DIR = '/home/chris/painters/data_check'
+DATA_DIR = '/home/yoavz/painters-data'
 TEST_DIR = join(DATA_DIR, 'test')
 TRAIN_DIR = join(DATA_DIR, 'train')
 TRAIN_INFO_FILE = join(DATA_DIR, 'train_info.csv')

@@ -1,54 +1,56 @@
-description: cnn-painter-by-number-entrypoint
+description: cnn-painter-adaptive
 checkpoint_storage:
   type: shared_fs
   host_path: "/home/chris/checkpoints/painters"
 
 bind_mounts:
-  - host_path: "/home/chris/painters/data_check"
-    container_path: "/home/chris/painters/data_check"
+  - host_path: "/home/yoavz"
+    container_path: "/home/yoavz"
 
 hyperparameters:
-  kernel_size:
-    type: const
-    val: 3
-  pool_size:
-    type: const
-    val: 2
-  dropout: # original value: 0.5
+  model_type:
+    type: categorical
+    vals: ["simple", "original"]
+
+  dropout:
     type: double
-    minval: 0.3
+    minval: 0.1
     maxval: 0.7
-  l2_reg: # original value: 0.003
-    type: double
-    minval: 0.001
-    maxval: 0.005
-  lr: # original value: 0.000074
-    type: double
-    minval: 0.00005
-    maxval: 0.00009
-  batch_size: # original value: 96
+
+  lr:
+    type: log
+    base: 10
+    minval: -6
+    maxval: -4
+
+  batch_size:
     type: int
-    minval: 48
-    maxval: 192
+    minval: 16
+    maxval: 96
+
+  multi_crop:
+    type: categorical
+    vals: [True, False]
+
+  kernel_size: 3
+  pool_size: 2
+  l2_reg: 0.003
 
 searcher:
-  name: adaptive
-  mode: standard
+  name: adaptive_simple
   metric: roc_auc
-  smaller_is_better: false
-  target_trial_steps: 1000
-  step_budget: 50000
-
-max_restarts: 5
+  smaller_is_better: true
+  max_steps: 300
+  max_trials: 25
 
 resources:
-  slots_per_trial: 2
+  slots_per_trial: 1
 
-min_validation_period: 10
-batches_per_step: 300
+min_validation_period: 5
+batches_per_step: 744  # 1 epoch
 
 environment:
   runtime_packages:
     - scikit-learn
-  keras: 2.2.4
-
+    - objgraph
+    - graphviz

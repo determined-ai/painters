@@ -20,16 +20,16 @@ from config import *
 K.set_learning_phase(1)
 K.set_image_data_format('channels_first')
 
-batch_size = pedl.get_hyperparameter("batch_size")
-kernel_size = pedl.get_hyperparameter("kernel_size")
-dropout = pedl.get_hyperparameter("dropout")
-pool_size = pedl.get_hyperparameter("pool_size")
-l2_reg = pedl.get_hyperparameter("l2_reg")
-
 
 def _cnn(imgs_dim):
 
     model = Sequential()
+
+    batch_size = pedl.get_hyperparameter("batch_size")
+    kernel_size = pedl.get_hyperparameter("kernel_size")
+    pool_size = pedl.get_hyperparameter("pool_size")
+    l2_reg = pedl.get_hyperparameter("l2_reg")
+
 
     model.add(_convolutional_layer(nb_filter=16, input_shape=imgs_dim))
     model.add(BatchNormalization(axis=1))
@@ -92,6 +92,38 @@ def _cnn(imgs_dim):
     model.add(_dense_layer(output_dim=SOFTMAX_SIZE))
     model.add(BatchNormalization())
     model.add(Activation(activation='softmax'))
+
+    return model
+
+
+def _simple_cnn(imgs_dim):
+    dropout = pedl.get_hyperparameter("dropout")
+    kernel_size = pedl.get_hyperparameter("kernel_size")
+    pool_size = pedl.get_hyperparameter("pool_size")
+
+    model = Sequential()
+    model.add(
+        Conv2D(32, (kernel_size, kernel_size), padding="same", input_shape=imgs_dim)
+    )
+    model.add(Activation("relu"))
+    model.add(Conv2D(32, (kernel_size, kernel_size)))
+    model.add(Activation("relu"))
+    model.add(MaxPooling2D(pool_size=(pool_size, pool_size)))
+    model.add(Dropout(dropout))
+
+    model.add(Conv2D(64, (kernel_size, kernel_size), padding="same"))
+    model.add(Activation("relu"))
+    model.add(Conv2D(64, (kernel_size, kernel_size)))
+    model.add(Activation("relu"))
+    model.add(MaxPooling2D(pool_size=(pool_size, pool_size)))
+    model.add(Dropout(dropout))
+
+    model.add(Flatten())
+    model.add(Dense(SOFTMAX_SIZE * 2))
+    model.add(Activation("relu"))
+    model.add(Dropout(dropout))
+    model.add(Dense(SOFTMAX_SIZE))
+    model.add(Activation("softmax"))
 
     return model
 
