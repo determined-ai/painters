@@ -34,6 +34,7 @@ hyperparameters:
 
   kernel_size: 3
   pool_size: 2
+  simple_cnn_pool_size: 4
   l2_reg: 0.003
 
 searcher:

@@ -19,7 +19,7 @@ def train_val_dirs_generators(
     gen_tr = _train_generator()
     gen_val = _val_generator()
 
-    sample = apply_to_images_in_subdirs(dir_tr, load_img_arr, num_per_cls=10)
+    sample = apply_to_images_in_subdirs(dir_tr, load_img_arr, num_per_cls=5)
     sample = np.array(sample)
     # Calculate any statistics required to actually perform the transforms
     # to image data in real time during training.

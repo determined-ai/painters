@@ -25,6 +25,7 @@ def _cnn(imgs_dim):
 
     model = Sequential()
 
+    dropout = pedl.get_hyperparameter("dropout")
     batch_size = pedl.get_hyperparameter("batch_size")
     kernel_size = pedl.get_hyperparameter("kernel_size")
     pool_size = pedl.get_hyperparameter("pool_size")
@@ -99,7 +100,7 @@ def _cnn(imgs_dim):
 def _simple_cnn(imgs_dim):
     dropout = pedl.get_hyperparameter("dropout")
     kernel_size = pedl.get_hyperparameter("kernel_size")
-    pool_size = pedl.get_hyperparameter("pool_size")
+    pool_size = pedl.get_hyperparameter("simple_cnn_pool_size")
 
     model = Sequential()
     model.add(
@@ -118,9 +119,14 @@ def _simple_cnn(imgs_dim):
     model.add(MaxPooling2D(pool_size=(pool_size, pool_size)))
     model.add(Dropout(dropout))
 
-    model.add(Flatten())
-    model.add(Dense(SOFTMAX_SIZE * 2))
+    model.add(Conv2D(128, (kernel_size, kernel_size), padding="same"))
     model.add(Activation("relu"))
+    model.add(Conv2D(128, (kernel_size, kernel_size)))
+    model.add(Activation("relu"))
+    model.add(MaxPooling2D(pool_size=(pool_size, pool_size)))
+    model.add(Dropout(dropout))
+
+    model.add(Flatten())
     model.add(Dropout(dropout))
     model.add(Dense(SOFTMAX_SIZE))
     model.add(Activation("softmax"))
@@ -136,17 +142,22 @@ def _convolutional_layer(nb_filter, input_shape=None):
 
 
 def _first_convolutional_layer(nb_filter, input_shape):
+    kernel_size = pedl.get_hyperparameter("kernel_size")
+    l2_reg = pedl.get_hyperparameter("l2_reg")
     return Conv2D(filters=nb_filter, kernel_size=(kernel_size, kernel_size), input_shape=input_shape,
         padding='same', kernel_initializer=W_INIT, kernel_regularizer=l2(l=l2_reg))
 
 
 def _intermediate_convolutional_layer(nb_filter):
+    kernel_size = pedl.get_hyperparameter("kernel_size")
+    l2_reg = pedl.get_hyperparameter("l2_reg")
     return Conv2D(
         filters=nb_filter, kernel_size=(kernel_size, kernel_size), padding='same',
         kernel_initializer=W_INIT, kernel_regularizer=l2(l=l2_reg))
 
 
 def _dense_layer(output_dim):
+    l2_reg = pedl.get_hyperparameter("l2_reg")
     return Dense(units=output_dim, kernel_regularizer=l2(l=l2_reg), kernel_initializer=W_INIT)
 
 
