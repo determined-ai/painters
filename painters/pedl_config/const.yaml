@@ -16,6 +16,7 @@ hyperparameters:
   lr: 0.000074
   batch_size: 96
   multi_crop: False
+  batch_normalization: True
 
 searcher:
   name: single

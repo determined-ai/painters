@@ -14,7 +14,6 @@ MISC_DIR = join(dirname(dirname(__file__)), 'misc')
 IMGS_DIM_3D = (3, 256, 256)
 CNN_MODEL_FILE = join(MODELS_DIR, 'cnn.h5')
 MAX_EPOCHS = 500
-W_INIT = 'he_normal'
 LAST_FEATURE_MAPS_LAYER = 46
 LAST_FEATURE_MAPS_SIZE = (128, 8, 8)
 PENULTIMATE_LAYER = 51

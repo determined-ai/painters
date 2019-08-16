@@ -1,4 +1,4 @@
-description: cnn-painter-adaptive
+description: cnn-painter-adaptive-large
 checkpoint_storage:
   type: shared_fs
   host_path: "/home/chris/checkpoints/painters"
@@ -10,7 +10,7 @@ bind_mounts:
 hyperparameters:
   model_type:
     type: categorical
-    vals: ["simple", "original"]
+    vals: ["original"]
 
   dropout:
     type: double
@@ -21,7 +21,7 @@ hyperparameters:
     type: log
     base: 10
     minval: -6
-    maxval: -4
+    maxval: -3
 
   batch_size:
     type: int
@@ -32,19 +32,30 @@ hyperparameters:
     type: categorical
     vals: [True, False]
 
-  batch_normalization: True
+  l2_reg:
+    type: log
+    base: 10
+    minval: -4
+    maxval: -2
+
+  initializer:
+    type: categorical
+    vals: ["random_uniform", "he_normal", "glorot_normal"]
+
+  batch_normalization:
+    type: categorical
+    vals: [False, True]
 
   kernel_size: 3
   pool_size: 2
   simple_cnn_pool_size: 4
-  l2_reg: 0.003
 
 searcher:
   name: adaptive_simple
   metric: roc_auc
-  smaller_is_better: true
+  smaller_is_better: false
   max_steps: 300
-  max_trials: 25
+  max_trials: 250
 
 resources:
   slots_per_trial: 1
