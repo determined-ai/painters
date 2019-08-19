@@ -1,4 +1,4 @@
-description: cnn-painter-adaptive-large
+description: cnn-painter-architecture-search
 checkpoint_storage:
   type: s3
   access_key: AKIAJGK24F32WWJ25AEA
@@ -10,14 +10,12 @@ bind_mounts:
     container_path: "/home/yoavz"
 
 hyperparameters:
-  model_type:
-    type: categorical
-    vals: ["original"]
+  model_type: "original"
 
   dropout:
     type: double
     minval: 0.1
-    maxval: 0.7
+    maxval: 0.8
 
   lr:
     type: log
@@ -48,8 +46,63 @@ hyperparameters:
     type: categorical
     vals: [False, True]
 
-  kernel_size: 3
-  pool_size: 2
+  num_layers_per_conv_block: 3
+
+  kernel_size_1:
+    type: int
+    minval: 3
+    maxval: 15
+
+  kernel_size_2:
+    type: int
+    minval: 3
+    maxval: 15
+
+  kernel_size_3:
+    type: int
+    minval: 3
+    maxval: 15
+
+  kernel_size_4:
+    type: int
+    minval: 3
+    maxval: 15
+
+  kernel_size_5:
+    type: int
+    minval: 3
+    maxval: 15
+
+  pool_size_1:
+    type: int
+    minval: 2
+    maxval: 4
+
+  pool_size_2:
+    type: int
+    minval: 2
+    maxval: 4
+
+  pool_size_3:
+    type: int
+    minval: 2
+    maxval: 4
+
+  pool_size_4:
+    type: int
+    minval: 2
+    maxval: 4
+
+  pool_size_5:
+    type: int
+    minval: 2
+    maxval: 4
+
+  final_hidden_size:
+    type: int
+    minval: 1024
+    maxval: 4096
+
   simple_cnn_pool_size: 4
 
 searcher:
@@ -57,7 +110,7 @@ searcher:
   metric: roc_auc
   smaller_is_better: false
   max_steps: 300
-  max_trials: 250
+  max_trials: 500
 
 resources:
   slots_per_trial: 1

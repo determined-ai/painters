@@ -1,6 +1,3 @@
-from os.path import join
-
-import math
 import keras.backend as K
 from keras.callbacks import ModelCheckpoint
 from keras.layers import (
@@ -18,7 +15,7 @@ from data_provider import train_val_dirs_generators
 from config import *
 
 K.set_learning_phase(1)
-K.set_image_data_format('channels_first')
+K.set_image_data_format("channels_first")
 
 
 def _cnn(imgs_dim):
@@ -26,77 +23,42 @@ def _cnn(imgs_dim):
     model = Sequential()
 
     dropout = pedl.get_hyperparameter("dropout")
-    batch_size = pedl.get_hyperparameter("batch_size")
-    kernel_size = pedl.get_hyperparameter("kernel_size")
-    pool_size = pedl.get_hyperparameter("pool_size")
-    l2_reg = pedl.get_hyperparameter("l2_reg")
     initializer = pedl.get_hyperparameter("initializer")
+    l2_reg = pedl.get_hyperparameter("l2_reg")
 
-    model.add(_convolutional_layer(nb_filter=16, input_shape=imgs_dim))
-    _maybe_add_batch_normalization(model)
-    model.add(PReLU(alpha_initializer=initializer))
-    model.add(_convolutional_layer(nb_filter=16))
-    _maybe_add_batch_normalization(model)
-    model.add(PReLU(alpha_initializer=initializer))
-    model.add(MaxPooling2D(pool_size=(pool_size, pool_size)))
-    model.add(Dropout(rate=dropout))
+    input_shape = imgs_dim
+    for (filter_size, kernel_size, pool_size) in [
+            (16, pedl.get_hyperparameter("kernel_size_1"), pedl.get_hyperparameter("pool_size_1")),
+            (32, pedl.get_hyperparameter("kernel_size_2"), pedl.get_hyperparameter("pool_size_2")),
+            (64, pedl.get_hyperparameter("kernel_size_3"), pedl.get_hyperparameter("pool_size_3")),
+            (128, pedl.get_hyperparameter("kernel_size_4"), pedl.get_hyperparameter("pool_size_4")),
+            (256, pedl.get_hyperparameter("kernel_size_5"), pedl.get_hyperparameter("pool_size_5"))
+        ]:
 
-    model.add(_convolutional_layer(nb_filter=32))
-    _maybe_add_batch_normalization(model)
-    model.add(PReLU(alpha_initializer=initializer))
-    model.add(_convolutional_layer(nb_filter=32))
-    _maybe_add_batch_normalization(model)
-    model.add(PReLU(alpha_initializer=initializer))
-    model.add(_convolutional_layer(nb_filter=32))
-    _maybe_add_batch_normalization(model)
-    model.add(PReLU(alpha_initializer=initializer))
-    model.add(MaxPooling2D(pool_size=(pool_size, pool_size)))
-    model.add(Dropout(rate=dropout))
+        # Convolutional block of layers.
+        for _ in range(pedl.get_hyperparameter("num_layers_per_conv_block")):
+            model.add(
+                Conv2D(filters=filter_size,
+                       kernel_size=(kernel_size, kernel_size),
+                       padding="same", kernel_initializer=initializer,
+                       kernel_regularizer=l2(l=l2_reg),
+                       input_shape=input_shape))
+            _maybe_add_batch_normalization(model)
+            model.add(PReLU(alpha_initializer=initializer))
+            input_shape = model.layers[-1].output_shape
 
-    model.add(_convolutional_layer(nb_filter=64))
-    _maybe_add_batch_normalization(model)
-    model.add(PReLU(alpha_initializer=initializer))
-    model.add(_convolutional_layer(nb_filter=64))
-    _maybe_add_batch_normalization(model)
-    model.add(PReLU(alpha_initializer=initializer))
-    model.add(_convolutional_layer(nb_filter=64))
-    _maybe_add_batch_normalization(model)
-    model.add(PReLU(alpha_initializer=initializer))
-    model.add(MaxPooling2D(pool_size=(pool_size, pool_size)))
-    model.add(Dropout(rate=dropout))
-
-    model.add(_convolutional_layer(nb_filter=128))
-    _maybe_add_batch_normalization(model)
-    model.add(PReLU(alpha_initializer=initializer))
-    model.add(_convolutional_layer(nb_filter=128))
-    _maybe_add_batch_normalization(model)
-    model.add(PReLU(alpha_initializer=initializer))
-    model.add(_convolutional_layer(nb_filter=128))
-    _maybe_add_batch_normalization(model)
-    model.add(PReLU(alpha_initializer=initializer))
-    model.add(MaxPooling2D(pool_size=(pool_size, pool_size)))
-    model.add(Dropout(rate=dropout))
-
-    model.add(_convolutional_layer(nb_filter=256))
-    _maybe_add_batch_normalization(model)
-    model.add(PReLU(alpha_initializer=initializer))
-    model.add(_convolutional_layer(nb_filter=256))
-    _maybe_add_batch_normalization(model)
-    model.add(PReLU(alpha_initializer=initializer))
-    model.add(_convolutional_layer(nb_filter=256))
-    _maybe_add_batch_normalization(model)
-    model.add(PReLU(alpha_initializer=initializer))
-    model.add(MaxPooling2D(pool_size=(pool_size, pool_size)))
-    model.add(Dropout(rate=dropout))
+        # Max pooling and dropout after the conv block
+        model.add(MaxPooling2D(pool_size=(pool_size, pool_size)))
+        model.add(Dropout(rate=dropout))
 
     model.add(Flatten())
-    model.add(_dense_layer(output_dim=PENULTIMATE_SIZE))
+    model.add(_dense_layer(output_dim=pedl.get_hyperparameter("final_hidden_size")))
     _maybe_add_batch_normalization(model)
     model.add(PReLU(alpha_initializer=initializer))
     model.add(Dropout(rate=dropout))
     model.add(_dense_layer(output_dim=SOFTMAX_SIZE))
     _maybe_add_batch_normalization(model)
-    model.add(Activation(activation='softmax'))
+    model.add(Activation(activation="softmax"))
 
     return model
 
@@ -158,7 +120,7 @@ def _intermediate_convolutional_layer(nb_filter):
     l2_reg = pedl.get_hyperparameter("l2_reg")
     initializer = pedl.get_hyperparameter("initializer")
     return Conv2D(
-        filters=nb_filter, kernel_size=(kernel_size, kernel_size), padding='same',
+        filters=nb_filter, kernel_size=(kernel_size, kernel_size), padding="same",
         kernel_initializer=initializer, kernel_regularizer=l2(l=l2_reg))
 
 
@@ -191,5 +153,5 @@ def _load_trained_cnn_layer(model_path, layer_index):
     return lambda X: dense_output([X, 0])[0]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _train_model()

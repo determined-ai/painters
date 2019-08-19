@@ -142,7 +142,7 @@ def make_data_loaders(experiment_config, hparams):
     gen_tr, gen_val = train_val_dirs_generators(
         pedl.get_hyperparameter("batch_size"), dir_tr, dir_val)
 
-    gen_tr = KerasDataAdapter(gen_tr, workers=16, use_multiprocessing=True)
-    gen_val = KerasDataAdapter(gen_val, workers=16, use_multiprocessing=True)
+    gen_tr = KerasDataAdapter(gen_tr, workers=4, use_multiprocessing=True)
+    gen_val = KerasDataAdapter(gen_val, workers=4, use_multiprocessing=True)
 
     return (gen_tr, gen_val)
