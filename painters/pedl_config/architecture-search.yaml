@@ -51,41 +51,41 @@ hyperparameters:
   kernel_size_1:
     type: int
     minval: 3
-    maxval: 15
+    maxval: 13
 
   kernel_size_2:
     type: int
     minval: 3
-    maxval: 15
+    maxval: 11
 
   kernel_size_3:
     type: int
     minval: 3
-    maxval: 15
+    maxval: 9
 
   kernel_size_4:
     type: int
     minval: 3
-    maxval: 15
+    maxval: 7
 
   kernel_size_5:
     type: int
     minval: 3
-    maxval: 15
+    maxval: 5
 
   pool_size_1:
     type: int
-    minval: 2
+    minval: 3
     maxval: 4
 
   pool_size_2:
     type: int
-    minval: 2
+    minval: 3
     maxval: 4
 
   pool_size_3:
     type: int
-    minval: 2
+    minval: 3
     maxval: 4
 
   pool_size_4:
@@ -115,6 +115,7 @@ searcher:
 resources:
   slots_per_trial: 1
 
+max_restarts: 25
 min_validation_period: 5
 batches_per_step: 744  # 1 epoch
 
